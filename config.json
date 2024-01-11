@@ -1,0 +1,35 @@
+{
+    "model_dicts": 
+    {
+        "resnet": ["4b64f", "6b128f"],
+        "square": ["conv3x", "conv5x"],
+        "ladder": ["conv3x", "conv6x"]
+    },
+    "use_model": 
+    {
+        "resnet": "4b64f"
+    },
+    "batch_size": 128,
+    "use_gpu": true,
+    "loss_type": ["ce", "ce"],
+    "opt_params": 
+    {
+        "lr": 2e-3,
+        "opt_type": "adamw",
+        "weight_decay": 1e-7,
+        "beta1": 0.9,
+        "beta2": 0.999,
+        "momentum":0.9,
+        "dampening":0.1
+    },
+    "scheduler_params": 
+    {
+        "scheduler_type": "constant",
+        "step_size": 50000,
+        "step_gamma": 0.9
+    },
+    "weights_dir": "./weights",
+    "logs_dir": "./logs",
+    "train_data_dir": "./data/train",
+    "val_data_dir": "./data/val"
+}
