@@ -1,20 +1,17 @@
-import random
 import time
 import os
+import json
 import numpy as np
 import torch
 from torch import optim, cuda
 from torch.utils.data import DataLoader
-from blocks.loss import Loss
-from model.resnet import ResNet
-from data_process.dataSet import GameDataSet
 import torch.nn.init as init
-import math
-from model.conv3x_nnue import conv3NNUE
-from model.ladder_conv3x_nnue import LadderConvNNUE
-from model.splited_conv5x_nnue import SplitedConv5NNUE
-from model.flat_conv3x_nnue import FlatConv3x3NNUE
-from data_process.dataSet import Conn6Dataset
+from torch.utils.tensorboard import SummaryWriter
+from data_process.dataSet import BoardGameDataSet
+from model.resnet import ResNet
+from blocks.loss import Loss
+from data_process.dataSet import BoardGameDataSet
+from utils import weights_init, build_optimizer, build_lr_scheduler, weight_clipping
 
 
 class Trainer:
@@ -30,22 +27,24 @@ class Trainer:
             "cuda:0" if is_use_gpu and cuda.is_available() else "cpu"
         )
         self.model_type = model_type
-        if not os.path.exists(f"./log/{self.model_type}"):
-            os.makedirs(f"./log/{self.model_type}")
-        if not os.path.exists(f"./weights/{self.model_type}"):
-            os.makedirs(f"./weights/{self.model_type}")
+        self.check_logs_weights_files()
         # 创建网络和优化器
         self.policy_value_net, self.optimizer = self.get_policy_value_net()
         # 创建损失函数
-        self.criterion = ValueLoss()
-        self.train_loss = []
-        self.test_loss = []
-        self.train_policy_loss = []
-        self.test_policy_loss = []
-        self.train_value_loss = []
-        self.test_value_loss = []
+        self.criterion = Loss(loss_type="ce")
 
-    #
+    def check_logs_weights_files(self):
+        if not os.path.exists(f"./logs/{self.model_type}"):
+            os.makedirs(f"./log/{self.model_type}")
+        if not os.path.exists(f"./weights/{self.model_type}"):
+            os.makedirs(f"./weights/{self.model_type}")
+
+    def get_train_loop_params(self):
+        with open("./config.json", 'r') as file:
+            params = json.load(file)
+            self.batch_size = params['batch_size']
+            
+
     def get_policy_value_net(self):
         """
         创建策略-价值网络，如果存在历史最优模型则直接载入最优模型.
@@ -85,8 +84,11 @@ class Trainer:
             for i_files in range(len(data_files)):
                 # while True:
                 k = np.random.randint(0, len(data_files))
-                train_data_set = Conn6Dataset(
-                    np.load(f"./conData/{data_files[k]}"))
+                train_data_set = BoardGameDataSet(data=np.load(f"./conData/{data_files[k]}"),
+                                                  use_policy_target=False,
+                                                  use_global_feature=False,
+                                                  use_value_target=True,
+                                                  use_draw=False)
                 # val_data_set = GameDataSet(np.load("./data/vdata/data.npz"))
                 td = DataLoader(
                     train_data_set, self.batch_size, shuffle=True, drop_last=False
@@ -179,12 +181,11 @@ class Trainer:
                 # self.policy_value_net, self.optimizer = self.get_policy_value_net()
 
 
-# if '__name__' == '__main__':
-train_config = {
-    "lr": 1e-3,
-    "batch_size": 4096,
-    "is_use_gpu": True,
-    "model_type": "connect",
-}
-train_model = Trainer(**train_config)
-train_model.train()
+# train_config = {
+#     "lr": 1e-3,
+#     "batch_size": 4096,
+#     "is_use_gpu": True,
+#     "model_type": "connect",
+# }
+# train_model = Trainer(**train_config)
+# train_model.train()
