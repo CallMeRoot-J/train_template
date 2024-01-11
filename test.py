@@ -50,4 +50,11 @@ def test_splited_conv5x_nnue():
     print(v.shape)
 
 
-test_splited_conv5x_nnue()
+def test_train_params():
+    import json
+    with open("./config.json", 'r') as file:
+        data = json.load(file)
+        print(data["model_dicts"])
+
+
+test_train_params()
