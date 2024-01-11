@@ -40,12 +40,11 @@ def weights_init(init_type):
     return init_fun
 
 
-def build_optimizer(optim_type, parameters, lr, weight_decay=0.0, **kwargs):
+def build_optimizer(optim_type, parameters, lr, weight_decay=0.0, beta1=0.9, beta2=0.999, momentum=0.9, dampening=0.1):
     if optim_type == 'adamw':
         opt = optim.AdamW(parameters,
                           lr=lr,
-                          betas=(kwargs.get('beta1', 0.9),
-                                 kwargs.get('beta2', 0.999)),
+                          betas=(beta1, beta2),
                           eps=1e-8,
                           weight_decay=weight_decay)
     elif optim_type == 'sgd':
@@ -54,8 +53,8 @@ def build_optimizer(optim_type, parameters, lr, weight_decay=0.0, **kwargs):
     elif optim_type == 'sgd_momentum':
         opt = optim.SGD(parameters,
                         lr=lr,
-                        momentum=kwargs.get('momentum', 0.9),
-                        dampening=kwargs.get('dampening', 0.1),
+                        momentum=momentum,
+                        dampening=dampening,
                         weight_decay=weight_decay)
     else:
         assert 0, f"Unsupported optimizer: {optim_type}"
@@ -63,15 +62,12 @@ def build_optimizer(optim_type, parameters, lr, weight_decay=0.0, **kwargs):
     return opt
 
 
-def build_lr_scheduler(optimizer, lr_schedule_type='constant', last_it=-1, **kwargs):
+def build_lr_scheduler(optimizer, lr_schedule_type='constant', last_it=-1, step_size=50000, step_gamma=0.9):
     if lr_schedule_type == 'constant':
-        scheduler = optim.lr_scheduler.ConstantLR(optimizer,
-                                                  factor=1.0,
-                                                  total_iters=0,
-                                                  last_epoch=last_it)
+        scheduler = optim.lr_scheduler.LambdaLR(optimizer,
+                                                lr_lambda=lambda epoch: 1.0,
+                                                last_epoch=last_it)
     elif lr_schedule_type == 'step':
-        step_size = kwargs.get('step_size', 50000)
-        step_gamma = kwargs.get('step_gamma', 0.9)
         scheduler = optim.lr_scheduler.StepLR(optimizer,
                                               step_size=step_size,
                                               gamma=step_gamma,
